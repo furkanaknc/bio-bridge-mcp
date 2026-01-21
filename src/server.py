@@ -28,7 +28,7 @@ def analyze_sample(geo_id: str) -> str:
             output.append("**Dosage:** Not found / Not Applicable")
             
         output.append("---")
-        output.append(f"**Summary Snippet:**\n{data['summary']}")
+        output.append(f"**Summary:**\n{data['summary']}")
         
         return "\n".join(output)
 
