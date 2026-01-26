@@ -2,20 +2,41 @@ import re
 import os
 import requests
 from Bio import Entrez
-from dotenv import load_dotenv
 
-load_dotenv()
+def search(query: str, limit: int = 5) -> list:
+    try:
+        if not Entrez.email:
+             Entrez.email = os.getenv("NCBI_EMAIL")
+        
+        handle = Entrez.esearch(db="gds", term=query, retmax=limit)
+        results = Entrez.read(handle)
+        handle.close()
+        
+        id_list = results.get("IdList", [])
+        if not id_list:
+            return []
+            
+        summary_handle = Entrez.esummary(db="gds", id=",".join(id_list))
+        summaries = Entrez.read(summary_handle)
+        summary_handle.close()
+        
+        output = []
+        for item in summaries:
+            output.append({
+                "id": item.get("Accession", item.get("Id")),
+                "title": item.get("Title", "Unknown Title"),
+                "summary": item.get("pdat", item.get("summary", "No summary available")) 
+            })
+        return output
+    except Exception as e:
+        return [{"error": str(e)}]
 
-Entrez.email = os.getenv("NCBI_EMAIL")
-
-
-def get_geo_sample_metadata(geo_accession: str) -> dict:
-
+def fetch_metadata(geo_accession: str) -> dict:
     try:
         if not Entrez.email:
             Entrez.email = os.getenv("NCBI_EMAIL")
             if not Entrez.email:
-                return {"error": "Configuration Error: NCBI_EMAIL is not set. Please configure it in your .env file or MCP client settings."}
+                return {"error": "Configuration Error: NCBI_EMAIL is not set."}
 
         clean_id = geo_accession.strip().replace("'", "").replace('"', "").upper()
 
@@ -59,10 +80,8 @@ def get_geo_sample_metadata(geo_accession: str) -> dict:
                     description.append(desc_value)
 
         all_text = full_text_data.lower()
-        characteristics_text = " ".join(characteristics).lower()
-
-        dosage_pattern = r'(\d+(\.\d+)?\s?((m|u|µ|n|p)g/(kg|ml)|(m|u|µ|n|p)M|IU/ml|%))'
         
+        dosage_pattern = r'(\d+(\.\d+)?\s?((m|u|µ|n|p)g/(kg|ml)|(m|u|µ|n|p)M|IU/ml|%))'
         dosage = None
         dosage_match = re.search(dosage_pattern, " ".join(characteristics), re.IGNORECASE)
         if dosage_match:
@@ -73,7 +92,6 @@ def get_geo_sample_metadata(geo_accession: str) -> dict:
                 dosage = dosage_match.group(0)
 
         condition = "Unknown"
-        
         control_keywords = ['control', 'placebo', 'untreated', 'vehicle', 'mock', 
                             'healthy', 'baseline', 'pbs', 'saline', 'wt', 'naive', 'normal']
         treated_keywords = ['treated', 'drug', 'dose', 'administered', 'exposure', 
@@ -85,10 +103,8 @@ def get_geo_sample_metadata(geo_accession: str) -> dict:
 
         if dosage and not dosage.startswith("0"):
             condition = "Treated"
-        
         elif any("drug treatment" in char.lower() for char in characteristics):
             condition = "Treated"
-        
         else:
             if 'pbs' in all_text or 'vehicle' in all_text:
                 if treated_score > control_score:
@@ -101,25 +117,13 @@ def get_geo_sample_metadata(geo_accession: str) -> dict:
                 condition = "Control"
 
         summary_parts = []
-        
-        if source_name:
-            summary_parts.append(f"Source: {source_name}")
-        
+        if source_name: summary_parts.append(f"Source: {source_name}")
         if characteristics:
             summary_parts.append("Characteristics:")
-            for char in characteristics:
-                summary_parts.append(f"  - {char}")
-        
-        if treatment_protocol:
-            summary_parts.append(f"Treatment Protocol: {treatment_protocol}")
-        
-        if growth_protocol:
-            summary_parts.append(f"Growth Protocol: {growth_protocol}")
-            
-        if description:
-            summary_parts.append(f"Description: {' '.join(description)}")
-
-        summary = "\n".join(summary_parts)
+            for char in characteristics: summary_parts.append(f"  - {char}")
+        if treatment_protocol: summary_parts.append(f"Treatment Protocol: {treatment_protocol}")
+        if growth_protocol: summary_parts.append(f"Growth Protocol: {growth_protocol}")
+        if description: summary_parts.append(f"Description: {' '.join(description)}")
 
         return {
             "accession": clean_id,
@@ -127,14 +131,8 @@ def get_geo_sample_metadata(geo_accession: str) -> dict:
             "organism": organism,
             "condition": condition,
             "dosage": dosage,
-            "summary": summary
+            "summary": "\n".join(summary_parts)
         }
 
-    except requests.exceptions.RequestException as e:
-        return {"error": f"Network error fetching GEO data: {str(e)}"}
     except Exception as e:
         return {"error": str(e)}
-
-
-if __name__ == "__main__":
-    print("Parsing logic script ready.")

@@ -1,20 +1,66 @@
 from mcp.server.fastmcp import FastMCP
-from parsing_logic import get_geo_sample_metadata
+from ncbi.client import NcbiClient
 import pdb_logic
 import json
+import re
 
 mcp = FastMCP("Bio-Bridge")
+ncbi_client = None
+
+try:
+    ncbi_client = NcbiClient()
+except Exception as e:
+    print(f"Warning: NCBI Client could not be initialized: {e}")
 
 @mcp.tool()
-def analyze_sample(geo_id: str) -> str:
-    """
-    Analyzes an NCBI GEO sample to detect treatment conditions and dosage.
-    """
-    if not geo_id.startswith("GSM"):
-        return f"Error: Invalid GEO ID format '{geo_id}'. Expected ID starting with 'GSM'."
+def search_geo_datasets(query: str) -> str:
+    if not ncbi_client:
+        return "Error: NCBI Client is not initialized."
+    
+    results = ncbi_client.search_geo(query)
+    if not results:
+        return f"No GEO results found for query: '{query}'"
+        
+    output = [f"### GEO Search Results for '{query}'"]
+    for item in results:
+        output.append(f"- **{item['id']}**: {item['title']}")
+    return "\n".join(output)
+
+@mcp.tool()
+def search_pubmed_papers(query: str) -> str:
+  
+    if not ncbi_client:
+        return "Error: NCBI Client is not initialized."
+    
+    results = ncbi_client.search_pubmed(query)
+    
+    if not results:
+         return f"No PubMed results found for query: '{query}'. Try simplifying keywords (e.g., 'Tamoxifen breast cancer' instead of complex sentences)."
+    
+    if "error" in results[0]:
+        return f"Error searching PubMed: {results[0]['error']}"
+        
+    output = [f"### PubMed Search Results for '{query}'"]
+    for item in results:
+        authors = ", ".join(item['authors'][:3]) + ("..." if len(item['authors']) > 3 else "")
+        output.append(f"- **PMID:{item['id']}**: {item['title']}")
+        output.append(f"  *Authors: {authors}*")
+        output.append(f"  *Journal: {item['journal']} ({item['pub_date']})*")
+    return "\n".join(output)
+
+@mcp.tool()
+def analyze_sample(input_text: str) -> str:
+    if not ncbi_client:
+        return "Error: NCBI Client is not initialized."
+
+    match = re.search(r'(GSM\d+)', input_text, re.IGNORECASE)
+    if not match:
+        return f"Error: No valid GSM ID found in input '{input_text}'. Please provide a valid GEO Sample ID (e.g., GSM12345)."
+    
+    geo_id = match.group(1).upper()
 
     try:
-        data = get_geo_sample_metadata(geo_id)
+        data = ncbi_client.fetch_geo_details(geo_id)
         
         if "error" in data:
             return f"Error fetching data for {geo_id}: {data['error']}"
@@ -41,11 +87,6 @@ def analyze_sample(geo_id: str) -> str:
 
 @mcp.tool()
 def pdb_get_summary(pdb_id: str) -> str:
-    """
-    Retrieves a summary of a PDB structure, including classification and a detailed check for mutations.
-    This tool is useful for identifying if a protein structure contains mutations even if the top-level 
-    summary says 'Mutation: 0'.
-    """
     try:
         data = pdb_logic.get_pdb_summary(pdb_id)
         if "error" in data:
@@ -72,10 +113,6 @@ def pdb_get_summary(pdb_id: str) -> str:
 
 @mcp.tool()
 def pdb_get_ligands(pdb_id: str) -> str:
-    """
-    Lists the ligands (drugs, small molecules) bound to a specific PDB structure.
-    Returns their names, formulas, and binding affinity info if available.
-    """
     try:
         ligands = pdb_logic.get_pdb_ligands(pdb_id)
         if not ligands:
@@ -94,10 +131,6 @@ def pdb_get_ligands(pdb_id: str) -> str:
 
 @mcp.tool()
 def pdb_find_pockets(pdb_id: str, ligand_id: str = None) -> str:
-    """
-    Calculates the coordinates of binding pockets for a given ligand (or the primary ligand if none specified).
-    Returns the geometric center (X, Y, Z) for each instance of the ligand found in the structure.
-    """
     try:
         data = pdb_logic.get_binding_pocket(pdb_id, ligand_id)
         if "error" in data:
