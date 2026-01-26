@@ -1,5 +1,6 @@
+import requests
 from .utils import get_json, post_graphql
-from .constants import RCSB_DATA_API
+from .constants import RCSB_DATA_API, TIMEOUT
 
 def get_pdb_summary(pdb_id: str) -> dict:
     pdb_id = pdb_id.upper()
@@ -56,3 +57,53 @@ def get_pdb_summary(pdb_id: str) -> dict:
         "mutation_details": mutations,
         "note": "Mutation annotations are not always complete; if needed, switch to rcsb_mutation_count-based check.",
     }
+
+def get_validation_report(pdb_id: str) -> dict:
+    pdb_id = pdb_id.upper()
+    try:
+        data = get_json(f"{RCSB_DATA_API}{pdb_id}")
+        
+        info = data.get("rcsb_entry_info") or {}
+        
+        report = {
+            "pdb_id": pdb_id,
+            "resolution": info.get("resolution_combined") or [info.get("diffrn_resolution_high", {}).get("value")],
+            "quality_assessment": "Unknown"
+        }
+        
+        res = report.get('resolution')
+        if res and isinstance(res, list) and res[0]:
+            try:
+                val = float(res[0])
+                if val < 1.5:
+                    report["quality_assessment"] = "Excellent (<1.5 A)"
+                elif val < 2.0:
+                    report["quality_assessment"] = "Good (<2.0 A)"
+                elif val < 3.0:
+                    report["quality_assessment"] = "Acceptable"
+                else:
+                    report["quality_assessment"] = "Poor (>3.0 A)"
+            except:
+                pass
+                
+        return report
+
+    except Exception as e:
+        return {"error": f"Validation fetch failed: {str(e)}"}
+
+def download_structure(pdb_id: str, file_format: str = "pdb") -> str:
+    pdb_id = pdb_id.lower()
+    valid_formats = ["pdb", "cif", "xml"]
+    if file_format not in valid_formats:
+        return f"Error: Invalid format '{file_format}'. Valid formats are: {', '.join(valid_formats)}"
+    
+    ext = "cif" if file_format == "mmcif" else file_format
+    
+    url = f"https://files.rcsb.org/download/{pdb_id}.{ext}"
+    
+    try:
+        r = requests.get(url, timeout=TIMEOUT)
+        r.raise_for_status()
+        return r.text
+    except Exception as e:
+        return f"Error downloading structure: {str(e)}"

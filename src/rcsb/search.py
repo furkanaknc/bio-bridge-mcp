@@ -1,18 +1,83 @@
 import requests
 from .constants import RCSB_SEARCH_API, TIMEOUT
 
-def search_structures(query_text: str, limit: int = 10) -> list:
+def search_structures(query_text: str, limit: int = 10, resolution: str = None, method: str = None) -> list:
     if not query_text:
         return []
 
-    search_query = {
-        "query": {
+    text_query_node = {
+        "type": "terminal",
+        "service": "full_text",
+        "parameters": {
+            "value": query_text
+        }
+    }
+
+    query_nodes = [text_query_node]
+
+    if method:
+        query_nodes.append({
             "type": "terminal",
-            "service": "full_text",
+            "service": "text",
             "parameters": {
-                "value": query_text
+                "attribute": "exptl.method",
+                "operator": "exact_match",
+                "value": method.upper()
             }
-        },
+        })
+
+    if resolution:
+        operator = "range"
+        value = {}
+        
+        if "-" in resolution:
+            parts = resolution.split("-")
+            if len(parts) == 2:
+                try:
+                    value = {"from": float(parts[0]), "to": float(parts[1])}
+                except ValueError:
+                    pass
+        elif resolution.startswith("<"):
+            try:
+                val = float(resolution[1:])
+                value = {"to": val, "include_upper": False}
+            except ValueError:
+                pass
+        elif resolution.startswith(">"):
+             try:
+                val = float(resolution[1:])
+                value = {"from": val, "include_lower": False}
+             except ValueError:
+                pass
+        else:
+             try:
+                 val = float(resolution)
+                 value = {"to": val, "include_upper": True}
+             except ValueError:
+                 pass
+
+        if value:
+             query_nodes.append({
+                "type": "terminal",
+                "service": "text",
+                "parameters": {
+                    "attribute": "rcsb_entry_info.resolution_combined",
+                    "operator": "range",
+                    "value": value
+                }
+            })
+
+    if len(query_nodes) > 1:
+        final_query = {
+            "type": "group",
+            "logical_operator": "and",
+            "nodes": query_nodes
+        }
+    else:
+        final_query = text_query_node
+
+    search_request = {
+        "query": final_query,
         "return_type": "entry",
         "request_options": {
             "paginate": {
@@ -30,7 +95,7 @@ def search_structures(query_text: str, limit: int = 10) -> list:
     }
 
     try:
-        r = requests.post(RCSB_SEARCH_API, json=search_query, timeout=TIMEOUT)
+        r = requests.post(RCSB_SEARCH_API, json=search_request, timeout=TIMEOUT)
         r.raise_for_status()
 
         if r.status_code == 204:
