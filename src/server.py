@@ -55,6 +55,127 @@ def search_pubmed_papers(query: str) -> str:
     return "\n".join(output)
 
 @mcp.tool()
+def blast_sequence(sequence: str, database: str = "nt", program: str = "blastn") -> str:
+    if not ncbi_client:
+        return "Error: NCBI Client is not initialized."
+    
+    try:
+        result = ncbi_client.blast_sequence(sequence, database, program)
+        
+        if "error" in result:
+            return f"Error: {result['error']}"
+        
+        output = [f"### BLAST Results ({result['program']} vs {result['database']})"]
+        output.append(f"**Query Length:** {result['query_length']} bp")
+        output.append(f"**Hits Found:** {result['hits_found']}")
+        output.append("---")
+        
+        for i, hit in enumerate(result['hits'][:5], 1):
+            output.append(f"**{i}. {hit['accession']}**")
+            output.append(f"   {hit['title']}")
+            output.append(f"   - E-value: {hit['e_value']:.2e}")
+            output.append(f"   - Identity: {hit['identity']}")
+            output.append(f"   - Coverage: {hit['query_coverage']}")
+        
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error running BLAST: {str(e)}"
+
+@mcp.tool()
+def fetch_sequence(accession: str, seq_type: str = "nucleotide") -> str:
+    if not ncbi_client:
+        return "Error: NCBI Client is not initialized."
+    
+    try:
+        result = ncbi_client.fetch_sequence(accession, seq_type)
+        
+        if "error" in result:
+            return f"Error: {result['error']}"
+        
+        output = [f"### Sequence: {result['accession']}"]
+        output.append(f"**Description:** {result['description']}")
+        
+        if "organism" in result:
+            output.append(f"**Organism:** {result['organism']}")
+        
+        output.append(f"**Length:** {result['full_sequence_length']} bp")
+        output.append("---")
+        
+        if "features" in result and result['features']:
+            output.append("**Features:**")
+            for feat in result['features']:
+                feat_str = f"- {feat['type']}"
+                if "gene" in feat:
+                    feat_str += f" ({feat['gene']})"
+                if "product" in feat:
+                    feat_str += f": {feat['product']}"
+                output.append(feat_str)
+            output.append("---")
+        
+        output.append(f"**Sequence (first 500 bp):**")
+        output.append(f"```\n{result['sequence']}\n```")
+        
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error fetching sequence: {str(e)}"
+
+@mcp.tool()
+def get_gene_info(gene_symbol: str, organism: str = "human") -> str:
+    if not ncbi_client:
+        return "Error: NCBI Client is not initialized."
+    
+    try:
+        result = ncbi_client.get_gene_info(gene_symbol, organism)
+        
+        if "error" in result:
+            return f"Error: {result['error']}"
+        
+        output = [f"### Gene: {result.get('official_symbol', gene_symbol)}"]
+        output.append(f"**Full Name:** {result.get('full_name', 'N/A')}")
+        output.append(f"**Gene ID:** {result.get('gene_id', 'N/A')}")
+        output.append(f"**Organism:** {result.get('organism', organism)}")
+        
+        if "chromosome" in result:
+            output.append(f"**Chromosome:** {result['chromosome']}")
+        
+        if "aliases" in result:
+            output.append(f"**Aliases:** {', '.join(result['aliases'])}")
+        
+        output.append("---")
+        
+        if "summary" in result:
+            output.append(f"**Summary:**")
+            output.append(result['summary'])
+        
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error getting gene info: {str(e)}"
+
+@mcp.tool()
+def search_genes(query: str, organism: str = "human") -> str:
+    if not ncbi_client:
+        return "Error: NCBI Client is not initialized."
+    
+    try:
+        results = ncbi_client.search_genes(query, organism, limit=10)
+        
+        if not results:
+            return f"No genes found for '{query}' in {organism}"
+        
+        if "error" in results[0]:
+            return f"Error: {results[0]['error']}"
+        
+        output = [f"### Gene Search Results for '{query}' ({organism})"]
+        for gene in results:
+            output.append(f"- **{gene['symbol']}** (ID: {gene['gene_id']})")
+            output.append(f"  {gene['description']}")
+            if gene.get('chromosome') != 'N/A':
+                output.append(f"  *Chromosome: {gene['chromosome']}*")
+        
+        output.append("\n*Use `get_gene_info` for detailed information about a specific gene.*")
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error searching genes: {str(e)}"
 def analyze_sample(input_text: str) -> str:
     if not ncbi_client:
         return "Error: NCBI Client is not initialized."
