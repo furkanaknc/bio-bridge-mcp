@@ -98,6 +98,7 @@ def search_geo_datasets(query: str) -> str:
     output = [f"### GEO Search Results for '{query}'"]
     for item in results:
         output.append(f"- **{item['id']}**: {item['title']}")
+        output.append(f"  *{item.get('organism', 'Unknown')} | {item.get('type', 'Unknown')} | {item.get('samples', 0)} samples*")
     return "\n".join(output)
 
 @mcp.tool()
@@ -971,6 +972,11 @@ def pdb_find_pockets(pdb_id: str, ligand_id: str = None) -> str:
 def pdb_search(query: str, resolution: str = None, method: str = None) -> str:
     """
     Search for PDB structures utilizing advanced filters.
+    
+    USE THIS WHEN: User asks for experimental protein structures (e.g., "crystal structure of hemoglobin", 
+    "NMR structures of kinases", "high-resolution X-ray structures").
+    
+    DO NOT USE FOR: Predicted structures (use `get_alphafold_structure`) or protein info without structure (use `get_uniprot_entry`).
     
     Args:
         query: Free-text search query (e.g. 'hemoglobin').

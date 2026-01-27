@@ -24,8 +24,11 @@ def search(query: str, limit: int = 5) -> list:
         for item in summaries:
             output.append({
                 "id": item.get("Accession", item.get("Id")),
-                "title": item.get("Title", "Unknown Title"),
-                "summary": item.get("pdat", item.get("summary", "No summary available")) 
+                "title": item.get("title", "Unknown Title"),  
+                "summary": item.get("summary", "No summary available"),  
+                "organism": item.get("taxon", "Unknown"),
+                "type": item.get("gdsType", "Unknown"),
+                "samples": item.get("n_samples", 0)
             })
         return output
     except Exception as e:
