@@ -48,3 +48,12 @@ class NcbiClient:
     
     def classify_geo_samples(self, gse_id: str, max_samples: int = 20) -> dict:
         return geo.classify_samples(gse_id, max_samples)
+    
+    def advanced_pubmed_search(self, gene: str = None, disease: str = None, 
+                               drug: str = None, author: str = None,
+                               year_from: int = None, year_to: int = None,
+                               limit: int = 10) -> list:
+        return pubmed.advanced_search(gene, disease, drug, author, year_from, year_to, limit)
+    
+    def get_pubmed_abstract(self, pmid: str) -> dict:
+        return pubmed.get_abstract(pmid)

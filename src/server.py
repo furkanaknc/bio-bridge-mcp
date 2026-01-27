@@ -4,6 +4,7 @@ from rcsb.client import RcsbClient
 from uniprot.client import UniProtClient
 from kegg.client import KeggClient
 from alphafold.client import AlphaFoldClient
+from clinvar.client import ClinVarClient
 import json
 import re
 
@@ -13,6 +14,7 @@ rcsb_client = None
 uniprot_client = None
 kegg_client = None
 alphafold_client = None
+clinvar_client = None
 
 try:
     ncbi_client = NcbiClient()
@@ -38,6 +40,11 @@ try:
     alphafold_client = AlphaFoldClient()
 except Exception as e:
     print(f"Warning: AlphaFold Client could not be initialized: {e}")
+
+try:
+    clinvar_client = ClinVarClient()
+except Exception as e:
+    print(f"Warning: ClinVar Client could not be initialized: {e}")
 
 @mcp.tool()
 def search_geo_datasets(query: str) -> str:
@@ -496,6 +503,116 @@ def get_alphafold_structure(uniprot_id: str) -> str:
         return "\n".join(output)
     except Exception as e:
         return f"Error getting AlphaFold structure: {str(e)}"
+
+@mcp.tool()
+def search_clinvar_variants(query: str) -> str:
+    if not clinvar_client:
+        return "Error: ClinVar Client is not initialized."
+    
+    try:
+        results = clinvar_client.search_variants(query, limit=10)
+        
+        if not results:
+            return f"No variants found for '{query}'"
+        
+        if "error" in results[0]:
+            return f"Error: {results[0]['error']}"
+        
+        output = [f"### ClinVar Variants for '{query}'"]
+        for v in results:
+            output.append(f"- **{v['title']}**")
+            output.append(f"  Gene: {v['gene']} | Significance: {v['clinical_significance']}")
+            output.append(f"  Accession: {v['accession']}")
+        
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error searching variants: {str(e)}"
+
+@mcp.tool()
+def search_clinvar_by_gene(gene_symbol: str, significance: str = None) -> str:
+    if not clinvar_client:
+        return "Error: ClinVar Client is not initialized."
+    
+    try:
+        results = clinvar_client.search_by_gene(gene_symbol, significance)
+        
+        if not results:
+            return f"No variants found for gene '{gene_symbol}'"
+        
+        if "error" in results[0]:
+            return f"Error: {results[0]['error']}"
+        
+        sig_text = f" ({significance})" if significance else ""
+        output = [f"### ClinVar Variants for {gene_symbol}{sig_text}"]
+        
+        for v in results:
+            output.append(f"- **{v['title'][:60]}**")
+            output.append(f"  Significance: {v['clinical_significance']} | {v['accession']}")
+        
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error searching by gene: {str(e)}"
+
+@mcp.tool()
+def advanced_pubmed_search(gene: str = None, disease: str = None, drug: str = None, year_from: int = None) -> str:
+    if not ncbi_client:
+        return "Error: NCBI Client is not initialized."
+    
+    try:
+        results = ncbi_client.advanced_pubmed_search(
+            gene=gene, disease=disease, drug=drug, year_from=year_from, limit=10
+        )
+        
+        if not results:
+            return "No articles found with the specified criteria"
+        
+        if "error" in results[0]:
+            return f"Error: {results[0]['error']}"
+        
+        criteria = []
+        if gene: criteria.append(f"Gene: {gene}")
+        if disease: criteria.append(f"Disease: {disease}")
+        if drug: criteria.append(f"Drug: {drug}")
+        if year_from: criteria.append(f"From: {year_from}")
+        
+        output = [f"### PubMed Search Results"]
+        output.append(f"*Criteria: {', '.join(criteria)}*")
+        output.append("---")
+        
+        for article in results:
+            authors = article.get('authors', [])[:2]
+            author_str = ', '.join(authors) + ' et al.' if len(article.get('authors', [])) > 2 else ', '.join(authors)
+            output.append(f"**{article['title'][:80]}...**")
+            output.append(f"*{author_str}* - {article['journal']} ({article['pub_date']})")
+            output.append(f"PMID: {article['id']}")
+            output.append("")
+        
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error in advanced search: {str(e)}"
+
+@mcp.tool()
+def get_pubmed_abstract(pmid: str) -> str:
+    if not ncbi_client:
+        return "Error: NCBI Client is not initialized."
+    
+    try:
+        result = ncbi_client.get_pubmed_abstract(pmid)
+        
+        if "error" in result:
+            return f"Error: {result['error']}"
+        
+        output = [f"### {result['title']}"]
+        output.append(f"**Authors:** {', '.join(result['authors'])}")
+        output.append(f"**Journal:** {result['journal']} ({result['year']})")
+        output.append(f"**PMID:** {result['pmid']}")
+        output.append("---")
+        output.append("**Abstract:**")
+        output.append(result['abstract'])
+        
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error getting abstract: {str(e)}"
 
 
 def analyze_sample(input_text: str) -> str:
