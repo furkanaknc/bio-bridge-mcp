@@ -1,12 +1,14 @@
 from mcp.server.fastmcp import FastMCP
 from ncbi.client import NcbiClient
 from rcsb.client import RcsbClient
+from uniprot.client import UniProtClient
 import json
 import re
 
 mcp = FastMCP("Bio-Bridge")
 ncbi_client = None
 rcsb_client = None
+uniprot_client = None
 
 try:
     ncbi_client = NcbiClient()
@@ -17,6 +19,11 @@ try:
     rcsb_client = RcsbClient()
 except Exception as e:
     print(f"Warning: RCSB Client could not be initialized: {e}")
+
+try:
+    uniprot_client = UniProtClient()
+except Exception as e:
+    print(f"Warning: UniProt Client could not be initialized: {e}")
 
 @mcp.tool()
 def search_geo_datasets(query: str) -> str:
@@ -176,6 +183,125 @@ def search_genes(query: str, organism: str = "human") -> str:
         return "\n".join(output)
     except Exception as e:
         return f"Error searching genes: {str(e)}"
+@mcp.tool()
+def get_uniprot_entry(uniprot_id: str) -> str:
+    if not uniprot_client:
+        return "Error: UniProt Client is not initialized."
+    
+    try:
+        result = uniprot_client.get_entry(uniprot_id)
+        
+        if "error" in result:
+            return f"Error: {result['error']}"
+        
+        output = [f"### Protein: {result['protein_name']}"]
+        output.append(f"**Accession:** {result['accession']}")
+        output.append(f"**Gene(s):** {', '.join(result['gene_names']) if result['gene_names'] else 'N/A'}")
+        output.append(f"**Organism:** {result['organism']}")
+        output.append("---")
+        
+        if result.get('function'):
+            output.append(f"**Function:**")
+            output.append(result['function'])
+            output.append("---")
+        
+        if result.get('sequence_info'):
+            seq = result['sequence_info']
+            output.append(f"**Sequence:** {seq.get('length', 0)} aa, {seq.get('mass', 0)/1000:.1f} kDa")
+        
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error getting UniProt entry: {str(e)}"
+
+@mcp.tool()
+def search_uniprot_proteins(query: str, organism: str = "human") -> str:
+    if not uniprot_client:
+        return "Error: UniProt Client is not initialized."
+    
+    try:
+        results = uniprot_client.search_proteins(query, organism, limit=10)
+        
+        if not results:
+            return f"No proteins found for '{query}' in {organism}"
+        
+        if "error" in results[0]:
+            return f"Error: {results[0]['error']}"
+        
+        output = [f"### UniProt Search Results for '{query}' ({organism})"]
+        for protein in results:
+            genes = ', '.join(protein['gene_names'][:2]) if protein['gene_names'] else 'N/A'
+            output.append(f"- **{protein['accession']}**: {protein['protein_name']}")
+            output.append(f"  *Gene(s): {genes}*")
+        
+        output.append("\n*Use `get_uniprot_entry` for detailed information.*")
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error searching proteins: {str(e)}"
+
+@mcp.tool()
+def get_protein_go_terms(uniprot_id: str) -> str:
+    if not uniprot_client:
+        return "Error: UniProt Client is not initialized."
+    
+    try:
+        result = uniprot_client.get_go_terms(uniprot_id)
+        
+        if "error" in result:
+            return f"Error: {result['error']}"
+        
+        output = [f"### GO Terms for {result['accession']} ({result['protein_name']})"]
+        
+        go_terms = result.get('go_terms', {})
+        
+        if go_terms.get('molecular_function'):
+            output.append("**Molecular Function:**")
+            for term in go_terms['molecular_function']:
+                output.append(f"- {term['id']}: {term['name']}")
+        
+        if go_terms.get('biological_process'):
+            output.append("**Biological Process:**")
+            for term in go_terms['biological_process']:
+                output.append(f"- {term['id']}: {term['name']}")
+        
+        if go_terms.get('cellular_component'):
+            output.append("**Cellular Component:**")
+            for term in go_terms['cellular_component']:
+                output.append(f"- {term['id']}: {term['name']}")
+        
+        if not any(go_terms.values()):
+            output.append("No GO terms found.")
+        
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error getting GO terms: {str(e)}"
+
+@mcp.tool()
+def get_protein_pathways(uniprot_id: str) -> str:
+    if not uniprot_client:
+        return "Error: UniProt Client is not initialized."
+    
+    try:
+        result = uniprot_client.get_pathways(uniprot_id)
+        
+        if "error" in result:
+            return f"Error: {result['error']}"
+        
+        output = [f"### Pathways for {result['accession']} ({result['protein_name']})"]
+        
+        pathways = result.get('pathways', [])
+        
+        if pathways:
+            for pathway in pathways:
+                output.append(f"- **{pathway['database']}**: {pathway['id']}")
+                if pathway.get('name'):
+                    output.append(f"  {pathway['name']}")
+        else:
+            output.append("No pathway information found.")
+        
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error getting pathways: {str(e)}"
+
 def analyze_sample(input_text: str) -> str:
     if not ncbi_client:
         return "Error: NCBI Client is not initialized."
