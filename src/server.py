@@ -2,6 +2,7 @@ from mcp.server.fastmcp import FastMCP
 from ncbi.client import NcbiClient
 from rcsb.client import RcsbClient
 from uniprot.client import UniProtClient
+from kegg.client import KeggClient
 import json
 import re
 
@@ -9,6 +10,7 @@ mcp = FastMCP("Bio-Bridge")
 ncbi_client = None
 rcsb_client = None
 uniprot_client = None
+kegg_client = None
 
 try:
     ncbi_client = NcbiClient()
@@ -24,6 +26,11 @@ try:
     uniprot_client = UniProtClient()
 except Exception as e:
     print(f"Warning: UniProt Client could not be initialized: {e}")
+
+try:
+    kegg_client = KeggClient()
+except Exception as e:
+    print(f"Warning: KEGG Client could not be initialized: {e}")
 
 @mcp.tool()
 def search_geo_datasets(query: str) -> str:
@@ -183,6 +190,7 @@ def search_genes(query: str, organism: str = "human") -> str:
         return "\n".join(output)
     except Exception as e:
         return f"Error searching genes: {str(e)}"
+
 @mcp.tool()
 def get_uniprot_entry(uniprot_id: str) -> str:
     if not uniprot_client:
@@ -301,6 +309,89 @@ def get_protein_pathways(uniprot_id: str) -> str:
         return "\n".join(output)
     except Exception as e:
         return f"Error getting pathways: {str(e)}"
+
+@mcp.tool()
+def search_kegg_pathway(query: str, organism: str = "hsa") -> str:
+    if not kegg_client:
+        return "Error: KEGG Client is not initialized."
+    
+    try:
+        results = kegg_client.search_pathway(query, organism)
+        
+        if not results:
+            return f"No pathways found for '{query}'"
+        
+        if "error" in results[0]:
+            return f"Error: {results[0]['error']}"
+        
+        output = [f"### KEGG Pathway Search Results for '{query}'"]
+        for pathway in results:
+            output.append(f"- **{pathway['id']}**: {pathway['name']}")
+        
+        output.append("\n*Use `get_kegg_pathway_info` for pathway details or `get_kegg_pathway_genes` for gene list.*")
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error searching pathways: {str(e)}"
+
+@mcp.tool()
+def get_kegg_pathway_info(pathway_id: str) -> str:
+    if not kegg_client:
+        return "Error: KEGG Client is not initialized."
+    
+    try:
+        result = kegg_client.get_pathway_info(pathway_id)
+        
+        if "error" in result:
+            return f"Error: {result['error']}"
+        
+        output = [f"### KEGG Pathway: {result['id']}"]
+        output.append(f"**Name:** {result.get('name', 'N/A')}")
+        
+        if result.get('description'):
+            output.append(f"**Description:** {result['description']}")
+        
+        output.append("---")
+        
+        genes = result.get('genes', [])
+        if genes:
+            output.append(f"**Genes ({len(genes)} shown):**")
+            for gene in genes[:15]:
+                output.append(f"- {gene.get('id', 'N/A')} ({gene.get('symbol', '')}): {gene.get('description', '')[:50]}")
+        
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error getting pathway info: {str(e)}"
+
+@mcp.tool()
+def get_kegg_pathway_genes(pathway_id: str) -> str:
+    if not kegg_client:
+        return "Error: KEGG Client is not initialized."
+    
+    try:
+        genes = kegg_client.get_pathway_genes(pathway_id)
+        
+        if not genes:
+            return f"No genes found in pathway {pathway_id}"
+        
+        if "error" in genes[0]:
+            return f"Error: {genes[0]['error']}"
+        
+        output = [f"### Genes in Pathway {pathway_id}"]
+        output.append(f"**Total genes:** {len(genes)}")
+        output.append("---")
+        
+        for gene in genes[:30]:
+            symbol = gene.get('symbol', '')
+            desc = gene.get('description', '')[:40]
+            output.append(f"- **{gene.get('id', 'N/A')}** {symbol}: {desc}")
+        
+        if len(genes) > 30:
+            output.append(f"\n*... and {len(genes) - 30} more genes*")
+        
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error getting pathway genes: {str(e)}"
+
 
 def analyze_sample(input_text: str) -> str:
     if not ncbi_client:
