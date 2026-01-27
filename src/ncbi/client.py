@@ -42,3 +42,9 @@ class NcbiClient:
     
     def search_genes(self, query: str, organism: str = "human", limit: int = 10) -> list:
         return sequence.search_genes(query, organism, limit)
+    
+    def analyze_geo_series(self, gse_id: str) -> dict:
+        return geo.analyze_series(gse_id)
+    
+    def classify_geo_samples(self, gse_id: str, max_samples: int = 20) -> dict:
+        return geo.classify_samples(gse_id, max_samples)
