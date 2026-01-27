@@ -8,7 +8,36 @@ from clinvar.client import ClinVarClient
 import json
 import re
 
-mcp = FastMCP("Bio-Bridge")
+mcp = FastMCP(
+    "Bio-Bridge",
+    instructions="""
+# Bio-Bridge: Bioinformatics MCP Server
+
+## 🎯 Tool Selection Guide
+
+| Category | Tools | Use When |
+|----------|-------|----------|
+| 📚 Literature | `advanced_pubmed_search`, `get_pubmed_abstract` | Papers, publications, research, clinical studies |
+| 🧬 Expression | `search_geo_datasets`, `analyze_geo_series`, `classify_geo_samples` | Gene expression, RNA-seq, microarray, GEO datasets |
+| 🔬 Structure | `get_alphafold_structure` | Protein 3D structures, PDB, predicted structures |
+| 🧪 Protein Info | `get_uniprot_entry`, `search_uniprot_proteins`, `get_protein_go_terms`, `get_protein_pathways` | Protein function, sequence, annotations, GO terms |
+| 🛤️ Pathways | `search_kegg_pathway`, `get_kegg_pathway_info`, `get_kegg_pathway_genes` | Metabolic pathways, signaling pathways, gene networks |
+| 🧬 Genetics | `get_gene_info`, `search_genes`, `blast_sequence`, `fetch_sequence` | Gene details, sequences, BLAST search |
+| 🏥 Clinical | `search_clinvar_variants`, `search_clinvar_by_gene` | Genetic variants, mutations, disease associations |
+
+## 🔄 Common Workflows
+
+### Drug Discovery
+`search_uniprot_proteins` → `get_uniprot_entry` → `get_alphafold_structure`
+
+### Gene Function Analysis  
+`advanced_pubmed_search` → `search_geo_datasets` → `analyze_geo_series`
+
+### Disease Research
+`search_clinvar_by_gene` → `get_gene_info` → `search_kegg_pathway`
+"""
+)
+
 ncbi_client = None
 rcsb_client = None
 uniprot_client = None
@@ -48,6 +77,17 @@ except Exception as e:
 
 @mcp.tool()
 def search_geo_datasets(query: str) -> str:
+    """
+    Search for gene expression datasets in NCBI GEO.
+
+    USE THIS WHEN: User asks for "expression data", "microarray studies", "RNA-seq datasets", 
+    or "GSE" series related to a topic (e.g., "breast cancer expression data").
+    
+    DO NOT USE FOR: Searching for specific genes (use `search_genes`) or proteins (use `search_uniprot_proteins`).
+
+    Args:
+        query: Keywords for the search (e.g., "diabetes illumina", "GSE12345").
+    """
     if not ncbi_client:
         return "Error: NCBI Client is not initialized."
     
@@ -62,6 +102,17 @@ def search_geo_datasets(query: str) -> str:
 
 @mcp.tool()
 def search_pubmed_papers(query: str) -> str:
+    """
+    Search PubMed for scientific papers and articles.
+    
+    USE THIS WHEN: User asks about "research papers", "clinical studies", "publications", 
+    or wants to find scientific literature on a topic (e.g., "latest studies on CRISPR").
+    
+    DO NOT USE FOR: General knowledge questions not requiring specific papers.
+    
+    Args:
+        query: Search keywords (e.g., "breast cancer immunotherapy", "TP53 mutations review").
+    """
   
     if not ncbi_client:
         return "Error: NCBI Client is not initialized."
@@ -84,6 +135,17 @@ def search_pubmed_papers(query: str) -> str:
 
 @mcp.tool()
 def blast_sequence(sequence: str, database: str = "nt", program: str = "blastn") -> str:
+    """
+    Run a BLAST search to find matching sequences in the NCBI database.
+    
+    USE THIS WHEN: User provides a DNA or protein sequence (e.g., "ATGC...") and asks "what is this?" 
+    or "identify this sequence".
+    
+    Args:
+        sequence: The nucleotide or protein sequence string.
+        database: 'nt' (nucleotide) or 'nr' (protein).
+        program: 'blastn', 'blastp', 'blastx', etc.
+    """
     if not ncbi_client:
         return "Error: NCBI Client is not initialized."
     
@@ -111,6 +173,15 @@ def blast_sequence(sequence: str, database: str = "nt", program: str = "blastn")
 
 @mcp.tool()
 def fetch_sequence(accession: str, seq_type: str = "nucleotide") -> str:
+    """
+    Fetch a specific DNA/RNA or protein sequence from NCBI.
+    
+    USE THIS WHEN: User asks for the sequence of a specific accession ID (e.g., "Get sequence of NM_000546").
+    
+    Args:
+        accession: NCBI Accession ID (e.g., 'NM_000546.5', 'NP_000537.3').
+        seq_type: 'nucleotide' or 'protein'.
+    """
     if not ncbi_client:
         return "Error: NCBI Client is not initialized."
     
@@ -149,6 +220,16 @@ def fetch_sequence(accession: str, seq_type: str = "nucleotide") -> str:
 
 @mcp.tool()
 def get_gene_info(gene_symbol: str, organism: str = "human") -> str:
+    """
+    Get detailed information about a specific gene.
+    
+    USE THIS WHEN: User asks about a gene (e.g., "What does BRCA1 do?", "Show me details for TP53").
+    Returns location, aliases, summary, and ID.
+    
+    Args:
+        gene_symbol: Gene symbol (e.g., 'BRCA1', 'EGFR').
+        organism: Target organism (default: 'human').
+    """
     if not ncbi_client:
         return "Error: NCBI Client is not initialized."
     
@@ -181,6 +262,18 @@ def get_gene_info(gene_symbol: str, organism: str = "human") -> str:
 
 @mcp.tool()
 def search_genes(query: str, organism: str = "human") -> str:
+    """
+    Search for genes by keyword.
+    
+    USE THIS WHEN: User wants to find genes related to a function, disease, or topic 
+    (e.g., "genes related to apoptosis", "insulin receptors").
+    
+    DO NOT USE FOR: Retrieving details of a specific gene (use `get_gene_info`).
+    
+    Args:
+        query: Search keywords.
+        organism: Target organism.
+    """
     if not ncbi_client:
         return "Error: NCBI Client is not initialized."
     
@@ -207,6 +300,14 @@ def search_genes(query: str, organism: str = "human") -> str:
 
 @mcp.tool()
 def get_uniprot_entry(uniprot_id: str) -> str:
+    """
+    Get detailed protein information from UniProt.
+    
+    USE THIS WHEN: User asks for protein details (function, sequences, mutations) of a specific ID.
+    
+    Args:
+        uniprot_id: UniProt ID (e.g., 'P04637').
+    """
     if not uniprot_client:
         return "Error: UniProt Client is not initialized."
     
@@ -237,6 +338,15 @@ def get_uniprot_entry(uniprot_id: str) -> str:
 
 @mcp.tool()
 def search_uniprot_proteins(query: str, organism: str = "human") -> str:
+    """
+    Search for proteins in UniProt.
+    
+    USE THIS WHEN: User asks for proteins by name (e.g., "Insulin", "P53") or function.
+    
+    Args:
+        query: Search keywords.
+        organism: Target organism.
+    """
     if not uniprot_client:
         return "Error: UniProt Client is not initialized."
     
@@ -262,6 +372,14 @@ def search_uniprot_proteins(query: str, organism: str = "human") -> str:
 
 @mcp.tool()
 def get_protein_go_terms(uniprot_id: str) -> str:
+    """
+    Get Gene Ontology (GO) terms for a protein.
+    
+    USE THIS WHEN: User asks about molecular function, biological process, or cellular component.
+    
+    Args:
+        uniprot_id: UniProt ID.
+    """
     if not uniprot_client:
         return "Error: UniProt Client is not initialized."
     
@@ -299,6 +417,14 @@ def get_protein_go_terms(uniprot_id: str) -> str:
 
 @mcp.tool()
 def get_protein_pathways(uniprot_id: str) -> str:
+    """
+    Get metabolic and signaling pathways for a protein.
+    
+    USE THIS WHEN: User asks "what pathways is this protein involved in?" or "does P53 affect apoptosis?".
+    
+    Args:
+        uniprot_id: UniProt ID.
+    """
     if not uniprot_client:
         return "Error: UniProt Client is not initialized."
     
@@ -326,6 +452,15 @@ def get_protein_pathways(uniprot_id: str) -> str:
 
 @mcp.tool()
 def search_kegg_pathway(query: str, organism: str = "hsa") -> str:
+    """
+    Search for KEGG pathways by keyword.
+    
+    USE THIS WHEN: User wants to find pathways related to a process (e.g., "cell cycle", "glycolysis").
+    
+    Args:
+        query: Search keywords.
+        organism: KEGG organism code (default: 'hsa' for human).
+    """
     if not kegg_client:
         return "Error: KEGG Client is not initialized."
     
@@ -349,6 +484,14 @@ def search_kegg_pathway(query: str, organism: str = "hsa") -> str:
 
 @mcp.tool()
 def get_kegg_pathway_info(pathway_id: str) -> str:
+    """
+    Get details of a specific KEGG pathway.
+    
+    USE THIS WHEN: User asks about a specific pathway ID (e.g., "hsa04110").
+    
+    Args:
+        pathway_id: KEGG Pathway ID.
+    """
     if not kegg_client:
         return "Error: KEGG Client is not initialized."
     
@@ -378,6 +521,14 @@ def get_kegg_pathway_info(pathway_id: str) -> str:
 
 @mcp.tool()
 def get_kegg_pathway_genes(pathway_id: str) -> str:
+    """
+    Get the list of genes involved in a KEGG pathway.
+    
+    USE THIS WHEN: User asks "what genes are in the apoptosis pathway?".
+    
+    Args:
+        pathway_id: KEGG Pathway ID.
+    """
     if not kegg_client:
         return "Error: KEGG Client is not initialized."
     
@@ -408,6 +559,14 @@ def get_kegg_pathway_genes(pathway_id: str) -> str:
 
 @mcp.tool()
 def analyze_geo_series(gse_id: str) -> str:
+    """
+    Analyze a GEO Series (GSE) to get experiment details.
+    
+    USE THIS WHEN: User provides a GSE ID (e.g., "GSE53986") and asks for analysis or summary.
+    
+    Args:
+        gse_id: GEO Series ID.
+    """
     if not ncbi_client:
         return "Error: NCBI Client is not initialized."
     
@@ -441,6 +600,14 @@ def analyze_geo_series(gse_id: str) -> str:
 
 @mcp.tool()
 def classify_geo_samples(gse_id: str) -> str:
+    """
+    Classify samples in a GEO Series into Control vs Treated groups.
+    
+    USE THIS WHEN: User wants to know experimental groups or sample conditions.
+    
+    Args:
+        gse_id: GEO Series ID.
+    """
     if not ncbi_client:
         return "Error: NCBI Client is not initialized."
     
@@ -480,6 +647,14 @@ def classify_geo_samples(gse_id: str) -> str:
 
 @mcp.tool()
 def get_alphafold_structure(uniprot_id: str) -> str:
+    """
+    Get the predicted 3D structure of a protein from AlphaFold.
+    
+    USE THIS WHEN: User asks for "structure", "3D model", or "AlphaFold prediction".
+    
+    Args:
+        uniprot_id: UniProt ID.
+    """
     if not alphafold_client:
         return "Error: AlphaFold Client is not initialized."
     
@@ -506,6 +681,14 @@ def get_alphafold_structure(uniprot_id: str) -> str:
 
 @mcp.tool()
 def search_clinvar_variants(query: str) -> str:
+    """
+    Search ClinVar for genetic variants.
+    
+    USE THIS WHEN: User asks for variants by disease, gene name (for all variants), or specific conditions.
+    
+    Args:
+        query: Search term (e.g., "BRCA1", "Cystic Fibrosis").
+    """
     if not clinvar_client:
         return "Error: ClinVar Client is not initialized."
     
@@ -530,6 +713,15 @@ def search_clinvar_variants(query: str) -> str:
 
 @mcp.tool()
 def search_clinvar_by_gene(gene_symbol: str, significance: str = None) -> str:
+    """
+    Search variants by gene symbol with optional clinical significance filter.
+    
+    USE THIS WHEN: User wants variants of a specific gene (e.g., "Pathogenic variants in TP53").
+    
+    Args:
+        gene_symbol: Gene symbol (e.g., 'TP53').
+        significance: Optional filter (e.g., 'Pathogenic', 'Benign').
+    """
     if not clinvar_client:
         return "Error: ClinVar Client is not initialized."
     
@@ -555,6 +747,17 @@ def search_clinvar_by_gene(gene_symbol: str, significance: str = None) -> str:
 
 @mcp.tool()
 def advanced_pubmed_search(gene: str = None, disease: str = None, drug: str = None, year_from: int = None) -> str:
+    """
+    Perform a structured search in PubMed using specific filters.
+    
+    USE THIS WHEN: User wants to combine criteria (e.g., "Papers on TP53 and Cancer from 2020").
+    
+    Args:
+        gene: Gene symbol.
+        disease: Disease or condition.
+        drug: Drug or chemical.
+        year_from: Start year.
+    """
     if not ncbi_client:
         return "Error: NCBI Client is not initialized."
     
@@ -593,6 +796,14 @@ def advanced_pubmed_search(gene: str = None, disease: str = None, drug: str = No
 
 @mcp.tool()
 def get_pubmed_abstract(pmid: str) -> str:
+    """
+    Get the abstract and details of a specific PubMed article.
+    
+    USE THIS WHEN: User provides a PMID and asks for the summary or abstract.
+    
+    Args:
+        pmid: PubMed ID (e.g., '34567890').
+    """
     if not ncbi_client:
         return "Error: NCBI Client is not initialized."
     
@@ -653,6 +864,14 @@ def analyze_sample(input_text: str) -> str:
 
 @mcp.tool()
 def pdb_get_summary(pdb_id: str) -> str:
+    """
+    Get details about a PDB structure, including classification and mutations.
+    
+    USE THIS WHEN: User asks for details of a specific PDB ID or wants to know if it has mutations.
+    
+    Args:
+        pdb_id: PDB ID (e.g., '1TUP').
+    """
     if not rcsb_client:
         return "Error: RCSB Client is not initialized."
         
@@ -682,6 +901,14 @@ def pdb_get_summary(pdb_id: str) -> str:
 
 @mcp.tool()
 def pdb_get_ligands(pdb_id: str) -> str:
+    """
+    List small molecule ligands bound to a PDB structure.
+    
+    USE THIS WHEN: User asks "what is bound to this structure?" or "does it contain any drugs/ligands?".
+    
+    Args:
+        pdb_id: PDB ID.
+    """
     if not rcsb_client:
         return "Error: RCSB Client is not initialized."
 
@@ -703,6 +930,15 @@ def pdb_get_ligands(pdb_id: str) -> str:
 
 @mcp.tool()
 def pdb_find_pockets(pdb_id: str, ligand_id: str = None) -> str:
+    """
+    Identify binding pockets in a PDB structure.
+    
+    USE THIS WHEN: User asks about drug binding sites or active pockets.
+    
+    Args:
+        pdb_id: PDB ID.
+        ligand_id: Optional ligand to focus on.
+    """
     if not rcsb_client:
         return "Error: RCSB Client is not initialized."
 
@@ -769,6 +1005,14 @@ def pdb_search(query: str, resolution: str = None, method: str = None) -> str:
 
 @mcp.tool()
 def pdb_get_validation_report(pdb_id: str) -> str:
+    """
+    Get the quality validation report for a PDB structure.
+    
+    USE THIS WHEN: User asks about the quality, resolution, or reliability of a crystal structure.
+    
+    Args:
+        pdb_id: PDB ID.
+    """
     if not rcsb_client:
         return "Error: RCSB Client is not initialized."
 
@@ -790,6 +1034,14 @@ def pdb_get_validation_report(pdb_id: str) -> str:
 
 @mcp.tool()
 def pdb_search_by_uniprot(uniprot_id: str) -> str:
+    """
+    Find PDB structures corresponding to a UniProt entry.
+    
+    USE THIS WHEN: User wants experimental structures for a specific protein ID.
+    
+    Args:
+        uniprot_id: UniProt ID.
+    """
     if not rcsb_client:
         return "Error: RCSB Client is not initialized."
 
@@ -808,8 +1060,18 @@ def pdb_search_by_uniprot(uniprot_id: str) -> str:
         return "\n".join(output)
     except Exception as e:
         return f"Error executing UniProt search: {str(e)}"
+
 @mcp.tool()
 def pdb_download_structure(pdb_id: str, file_format: str = "pdb") -> str:
+    """
+    Download a PDB structure file content.
+    
+    USE THIS WHEN: User explicitly asks to download or fetch detail thing about a structure or see the raw file content of a structure.
+    
+    Args:
+        pdb_id: PDB ID.
+        file_format: 'pdb' or 'cif'.
+    """
     if not rcsb_client:
         return "Error: RCSB Client is not initialized."
 
