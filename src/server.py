@@ -11,29 +11,38 @@ import re
 mcp = FastMCP(
     "Bio-Bridge",
     instructions="""
-# Bio-Bridge: Bioinformatics MCP Server
+# Bio-Bridge: Bioinformatics MCP Server (27 Tools)
 
 ## 🎯 Tool Selection Guide
 
 | Category | Tools | Use When |
 |----------|-------|----------|
-| 📚 Literature | `advanced_pubmed_search`, `get_pubmed_abstract` | Papers, publications, research, clinical studies |
-| 🧬 Expression | `search_geo_datasets`, `analyze_geo_series`, `classify_geo_samples` | Gene expression, RNA-seq, microarray, GEO datasets |
-| 🔬 Structure | `get_alphafold_structure` | Protein 3D structures, PDB, predicted structures |
-| 🧪 Protein Info | `get_uniprot_entry`, `search_uniprot_proteins`, `get_protein_go_terms`, `get_protein_pathways` | Protein function, sequence, annotations, GO terms |
-| 🛤️ Pathways | `search_kegg_pathway`, `get_kegg_pathway_info`, `get_kegg_pathway_genes` | Metabolic pathways, signaling pathways, gene networks |
-| 🧬 Genetics | `get_gene_info`, `search_genes`, `blast_sequence`, `fetch_sequence` | Gene details, sequences, BLAST search |
-| 🏥 Clinical | `search_clinvar_variants`, `search_clinvar_by_gene` | Genetic variants, mutations, disease associations |
+| 📚 Literature | `search_pubmed_papers`, `advanced_pubmed_search`, `get_pubmed_abstract` | Papers, publications, research |
+| 🧬 Expression | `search_geo_datasets`, `analyze_geo_series`, `classify_geo_samples` | Gene expression, RNA-seq, microarray |
+| 🔮 Predicted Structure | `get_alphafold_structure` | AI-predicted 3D structures (NO ligands!) |
+| 🔬 Experimental PDB | `pdb_search`, `pdb_get_summary`, `pdb_get_ligands`, `pdb_find_pockets`, `pdb_get_validation_report`, `pdb_search_by_uniprot`, `pdb_download_structure` | X-ray/NMR structures, ligands, quality |
+| 🧪 Protein Info | `get_uniprot_entry`, `search_uniprot_proteins`, `get_protein_go_terms`, `get_protein_pathways` | Function, sequence, GO terms, pathways |
+| 🛤️ Pathways | `search_kegg_pathway`, `get_kegg_pathway_info`, `get_kegg_pathway_genes` | Metabolic/signaling pathways |
+| 🧬 Genetics | `get_gene_info`, `search_genes`, `blast_sequence`, `fetch_sequence` | Gene details, sequences, BLAST |
+| 🏥 Clinical | `search_clinvar_variants`, `search_clinvar_by_gene` | Genetic variants, mutations |
+
+## ⚠️ CRITICAL: AlphaFold vs PDB
+- **AlphaFold (AF-*)** = Predicted, NO ligands → Use for structure prediction only
+- **PDB (1ABC, 7DF4)** = Experimental, HAS ligands → Use for drug binding analysis
+- For ligand/pocket analysis: ALWAYS use `pdb_*` tools, NEVER AlphaFold!
 
 ## 🔄 Common Workflows
 
-### Drug Discovery
-`search_uniprot_proteins` → `get_uniprot_entry` → `get_alphafold_structure`
+### Ligand Binding Analysis
+`pdb_search("protein drug")` → `pdb_get_ligands` → `pdb_find_pockets`
 
-### Gene Function Analysis  
-`advanced_pubmed_search` → `search_geo_datasets` → `analyze_geo_series`
+### Protein to Structure
+`search_uniprot_proteins` → `pdb_search_by_uniprot` → `pdb_get_summary`
 
-### Disease Research
+### Gene Expression Study
+`search_geo_datasets` → `analyze_geo_series` → `classify_geo_samples`
+
+### Disease Variant Research
 `search_clinvar_by_gene` → `get_gene_info` → `search_kegg_pathway`
 """
 )
@@ -934,11 +943,15 @@ def pdb_find_pockets(pdb_id: str, ligand_id: str = None) -> str:
     """
     Identify binding pockets in a PDB structure.
     
-    USE THIS WHEN: User asks about drug binding sites or active pockets.
+    USE THIS WHEN: User asks about drug binding sites or active pockets in experimental structures.
+    
+    DO NOT USE FOR: AlphaFold predicted structures (AF-*) - they contain NO ligands.
+    Use only with experimental PDB structures (e.g., '1TUP', '7DF4') that have co-crystallized ligands.
+    The ligand_id must be a 3-letter PDB ligand code (e.g., 'ATP', 'HEM'), not a drug name.
     
     Args:
-        pdb_id: PDB ID.
-        ligand_id: Optional ligand to focus on.
+        pdb_id: PDB ID (experimental structure, NOT AlphaFold).
+        ligand_id: Optional 3-letter ligand code (use pdb_get_ligands first to find valid codes).
     """
     if not rcsb_client:
         return "Error: RCSB Client is not initialized."
