@@ -71,7 +71,7 @@ def get_variant_summaries(id_list: list, api_key: str = None) -> list:
                         clinical_sig = str(sig)
                 
                 gene_info = item.get("genes", [])
-                gene_symbol = gene_info[0].get("symbol", "N/A") if gene_info else "N/A"
+                gene_symbol = gene_info[0].get("symbol", "N/A") if gene_info and isinstance(gene_info[0], dict) else "N/A"
                 
                 results.append({
                     "uid": uid,

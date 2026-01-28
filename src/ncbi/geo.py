@@ -27,7 +27,7 @@ def search(query: str, limit: int = 5) -> list:
                 "title": item.get("title", "Unknown Title"),  
                 "summary": item.get("summary", "No summary available"),  
                 "organism": item.get("taxon", "Unknown"),
-                "type": item.get("gdsType", "Unknown"),
+                "type": item.get("gdstype", "Unknown"),
                 "samples": item.get("n_samples", 0)
             })
         return output

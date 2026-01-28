@@ -1,5 +1,4 @@
 import httpx
-from typing import Optional
 
 UNIPROT_BASE = "https://rest.uniprot.org/uniprotkb"
 TIMEOUT = 30.0
@@ -48,10 +47,11 @@ def get_entry(uniprot_id: str) -> dict:
         
         seq_info = {}
         if "sequence" in data:
+            seq_value = data["sequence"].get("value", "") or ""
             seq_info = {
                 "length": data["sequence"].get("length", 0),
                 "mass": data["sequence"].get("molWeight", 0),
-                "sequence": data["sequence"].get("value", "")[:200] + "..." if len(data["sequence"].get("value", "")) > 200 else data["sequence"].get("value", "")
+                "sequence": (seq_value[:200] + "...") if len(seq_value) > 200 else seq_value
             }
         
         return {

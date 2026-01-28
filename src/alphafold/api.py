@@ -1,5 +1,4 @@
 import httpx
-from typing import Optional
 
 ALPHAFOLD_BASE = "https://alphafold.ebi.ac.uk/api"
 TIMEOUT = 30.0
@@ -34,7 +33,7 @@ def get_prediction(uniprot_id: str) -> dict:
             "pae_image_url": prediction.get("paeImageUrl", ""),
             "model_created": prediction.get("modelCreatedDate", ""),
             "latest_version": prediction.get("latestVersion", 1),
-            "sequence_length": prediction.get("uniprotEnd", 0) - prediction.get("uniprotStart", 0) + 1
+            "sequence_length": max(0, prediction.get("uniprotEnd", 0) - prediction.get("uniprotStart", 0) + 1)
         }
         
     except httpx.HTTPStatusError as e:

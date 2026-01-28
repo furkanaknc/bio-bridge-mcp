@@ -1,11 +1,14 @@
 import httpx
-from typing import Optional
 
 KEGG_BASE = "https://rest.kegg.jp"
 TIMEOUT = 30.0
 
 
 def search_pathway(query: str, organism: str = "hsa") -> list:
+    """
+    Search KEGG pathways by text query.
+    Note: The organism parameter is only used for ID formatting, not filtering.
+    """
     try:
         url = f"{KEGG_BASE}/find/pathway/{query}"
         

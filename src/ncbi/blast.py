@@ -1,6 +1,4 @@
-import os
 from Bio.Blast import NCBIWWW, NCBIXML
-from Bio import Entrez
 
 
 def run_blast(
@@ -37,14 +35,16 @@ def run_blast(
         hits = []
         for alignment in blast_record.alignments[:max_hits]:
             for hsp in alignment.hsps[:1]:
+                align_len = hsp.align_length if hsp.align_length > 0 else 1
+                query_len = len(clean_seq) if len(clean_seq) > 0 else 1
                 hit = {
                     "title": alignment.title[:100] + "..." if len(alignment.title) > 100 else alignment.title,
                     "accession": alignment.accession,
                     "length": alignment.length,
                     "score": hsp.score,
                     "e_value": hsp.expect,
-                    "identity": f"{hsp.identities}/{hsp.align_length} ({100*hsp.identities/hsp.align_length:.1f}%)",
-                    "query_coverage": f"{hsp.align_length}/{len(clean_seq)} ({100*hsp.align_length/len(clean_seq):.1f}%)"
+                    "identity": f"{hsp.identities}/{hsp.align_length} ({100*hsp.identities/align_len:.1f}%)",
+                    "query_coverage": f"{hsp.align_length}/{len(clean_seq)} ({100*hsp.align_length/query_len:.1f}%)"
                 }
                 hits.append(hit)
         
