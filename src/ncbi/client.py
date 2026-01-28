@@ -7,10 +7,11 @@ load_dotenv()
 
 class NcbiClient:
     def __init__(self):
-        self.email = os.getenv("NCBI_EMAIL")
-        if not self.email:
-            raise ValueError("NCBI_EMAIL environment variable is not set.")
+        self.email = os.getenv("NCBI_EMAIL", "anonymous@email.local")
         Entrez.email = self.email
+        
+        if self.email == "anonymous@email.local":
+            print("[INFO] No NCBI_EMAIL set - using default. Set NCBI_EMAIL env var for better rate limits.")
         
         self.api_key = os.getenv("NCBI_API_KEY")
         if self.api_key:

@@ -3,3 +3,4 @@ biopython
 requests
 pandas
 python-dotenv
+httpx
