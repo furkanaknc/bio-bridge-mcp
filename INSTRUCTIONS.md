@@ -1,73 +1,48 @@
-# Bio-Bridge Usage Guide for LLMs
+# Bio-Bridge Usage Guide
 
-## 🎯 Quick Reference - 27 Tools
+## Quick Routing
 
-### When user mentions...
+- Papers, studies, literature: `search_pubmed_papers`, `advanced_pubmed_search`,
+  `get_pubmed_abstract`
+- GEO, GSE, RNA-seq, microarray: `search_geo_datasets`, `analyze_geo_series`,
+  `classify_geo_samples`
+- Gene details or search: `get_gene_info`, `search_genes`
+- Sequence lookup or BLAST: `fetch_sequence`, `blast_sequence`
+- Experimental structures, ligands, pockets: `pdb_search`, `pdb_get_summary`,
+  `pdb_get_ligands`, `pdb_find_pockets`
+- Predicted structure only: `get_alphafold_structure`
+- Protein function and GO terms: `get_uniprot_entry`, `search_uniprot_proteins`,
+  `get_protein_go_terms`, `get_protein_pathways`
+- Pathways: `search_kegg_pathway`, `get_kegg_pathway_info`, `get_kegg_pathway_genes`
+- Variants and pathogenic mutations: `search_clinvar_variants`, `search_clinvar_by_gene`
 
-| User Says                                                | Use These Tools                                                         |
-| -------------------------------------------------------- | ----------------------------------------------------------------------- |
-| "paper", "publication", "study", "research"              | `search_pubmed_papers`, `advanced_pubmed_search`, `get_pubmed_abstract` |
-| "expression", "GEO", "GSE", "RNA-seq", "microarray"      | `search_geo_datasets` → `analyze_geo_series` → `classify_geo_samples`   |
-| "structure", "3D model", "AlphaFold"                     | `get_alphafold_structure` ⚠️ No ligands!                                |
-| "crystal structure", "X-ray", "NMR", "ligand", "binding" | `pdb_search`, `pdb_get_ligands`, `pdb_find_pockets`                     |
-| "protein function", "UniProt", "GO terms"                | `get_uniprot_entry`, `search_uniprot_proteins`, `get_protein_go_terms`  |
-| "pathway", "KEGG", "metabolism", "signaling"             | `search_kegg_pathway`, `get_kegg_pathway_genes`                         |
-| "variant", "mutation", "SNP", "pathogenic"               | `search_clinvar_variants`, `search_clinvar_by_gene`                     |
-| "gene info", "gene function"                             | `get_gene_info`, `search_genes`                                         |
-| "sequence", "accession", "BLAST"                         | `fetch_sequence`, `blast_sequence`                                      |
+## Critical Distinction
 
----
+- AlphaFold: predicted structures, no ligand analysis
+- PDB: experimental structures, use for ligand and pocket analysis
 
-## ⚠️ CRITICAL: AlphaFold vs PDB
+## Common Workflows
 
-| Feature | AlphaFold (AF-\*)         | PDB (1ABC, 7DF4)             |
-| ------- | ------------------------- | ---------------------------- |
-| Type    | AI Predicted              | Experimental (X-ray/NMR)     |
-| Ligands | ❌ NONE                   | ✅ May contain drugs/ligands |
-| Use For | Structure visualization   | Drug binding analysis        |
-| Tools   | `get_alphafold_structure` | `pdb_*` tools                |
+Ligand binding:
 
-**Rule:** For ligand/pocket analysis → ALWAYS use PDB tools, NEVER AlphaFold!
-
----
-
-## 🔄 Workflow Examples
-
-### Ligand Binding Analysis
-
-```
-1. pdb_search("CFTR ivacaftor")     → Find experimental structure
-2. pdb_get_ligands("7SV7")          → Get ligand code (e.g., "VX7")
-3. pdb_find_pockets("7SV7", "VX7")  → Analyze binding pocket
+```text
+pdb_search -> pdb_get_ligands -> pdb_find_pockets
 ```
 
-### Protein Structure Pipeline
+Protein to structure:
 
-```
-1. search_uniprot_proteins("insulin receptor") → Find protein ID
-2. pdb_search_by_uniprot("P06213")             → Find PDB structures
-3. pdb_get_summary("1IR3")                     → Get structure details
+```text
+search_uniprot_proteins -> pdb_search_by_uniprot -> pdb_get_summary
 ```
 
-### Gene Expression Analysis
+Gene expression:
 
-```
-1. search_geo_datasets("tamoxifen breast cancer") → Find datasets
-2. analyze_geo_series("GSE312800")                → Analyze series
-3. classify_geo_samples("GSE312800")              → Control vs Treated
+```text
+search_geo_datasets -> analyze_geo_series -> classify_geo_samples
 ```
 
-### Disease Variant Research
+Disease variants:
 
-```
-1. search_clinvar_by_gene("BRCA1", "Pathogenic") → Find variants
-2. get_gene_info("BRCA1")                         → Gene details
-3. get_uniprot_entry("P38398")                    → Protein context
-```
-
-### Literature Search
-
-```
-1. advanced_pubmed_search(gene="TP53", disease="cancer", year_from=2023)
-2. get_pubmed_abstract("39012345")               → Read specific paper
+```text
+search_clinvar_by_gene -> get_gene_info -> search_kegg_pathway
 ```

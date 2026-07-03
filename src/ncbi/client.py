@@ -1,9 +1,9 @@
 import os
-from dotenv import load_dotenv
 from Bio import Entrez
 from . import geo, pubmed, blast, sequence
+from shared.env import load_project_env
 
-load_dotenv()
+load_project_env()
 
 class NcbiClient:
     def __init__(self):
