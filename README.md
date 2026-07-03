@@ -37,6 +37,8 @@ structures and do not provide ligand context.
 
 ## Run
 
+### Local Execution
+
 ```bash
 pip install -r requirements.txt
 mcp dev src/server.py
@@ -47,6 +49,92 @@ Production:
 ```bash
 python src/server.py
 ```
+
+### Running with Docker
+
+This MCP server is published on Docker Hub. You can run it directly without cloning/building the repository:
+
+```bash
+docker run -i --rm akncdocker/bio-bridge
+```
+
+If you prefer to build the image locally:
+```bash
+docker build -t akncdocker/bio-bridge .
+```
+
+---
+
+## IDE & Client Integration
+
+To use this MCP server in Claude Desktop, Cursor, or other compatible environments, use the configurations below.
+
+### 1. Claude Desktop
+Add this to your `claude_desktop_config.json` (Windows: `%APPDATA%\Claude\claude_desktop_config.json`, macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+#### Using Docker (Recommended - pulls automatically from Docker Hub)
+```json
+{
+  "mcpServers": {
+    "bio-bridge": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e", "NCBI_EMAIL=your.email@example.com",
+        "-e", "NCBI_API_KEY=your_api_key_here",
+        "akncdocker/bio-bridge"
+      ]
+    }
+  }
+}
+```
+
+#### Using Local Python Installation
+```json
+{
+  "mcpServers": {
+    "bio-bridge": {
+      "command": "python",
+      "args": [
+        "C:/path/to/bio_bridge/src/server.py"
+      ],
+      "env": {
+        "NCBI_EMAIL": "your.email@example.com",
+        "NCBI_API_KEY": "your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+### 2. Cursor
+1. Open Cursor and navigate to **Settings** > **Features** > **MCP**.
+2. Click **+ Add New MCP Server**.
+3. Set the following values:
+   - **Name**: `bio-bridge`
+   - **Type**: `command`
+   - **Command**: 
+     - **For Docker:** `docker run -i --rm akncdocker/bio-bridge`
+     - **For Local Python:** `python -u C:/path/to/bio_bridge/src/server.py`
+
+### 3. Graphical Interfaces / Custom Extensions (e.g. Cline, Roo Code, VS Code Extensions)
+If you are using a GUI-based MCP configuration panel where the launch command and its arguments are split:
+
+1. **Name:** `bio-bridge`
+2. **Type:** Choose **STDIO**
+3. **Command to launch:** `docker`
+4. **Arguments:** (Add each as a separate argument item/line)
+   - `run`
+   - `-i`
+   - `--rm`
+   - `akncdocker/bio-bridge`
+5. **Environment variables:** (Optional)
+   - **Key:** `NCBI_EMAIL` | **Value:** `your.email@example.com`
+   - **Key:** `NCBI_API_KEY` | **Value:** `your_api_key_here`
+
+---
 
 ## Test
 
