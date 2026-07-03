@@ -1,6 +1,9 @@
 import os
 from Bio import Entrez
 import httpx
+from shared.env import load_project_env
+
+load_project_env()
 
 CLINVAR_ESEARCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 CLINVAR_ESUMMARY = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"

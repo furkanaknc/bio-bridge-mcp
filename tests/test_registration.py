@@ -11,6 +11,7 @@ if str(SRC) not in sys.path:
 
 from servers import register_all_tools
 from workflows.geo_sample_analysis import analyze_sample
+from shared.env import load_project_env
 
 
 class FakeMCP:
@@ -26,6 +27,9 @@ class FakeMCP:
 
 
 class RegistrationTests(unittest.TestCase):
+    def test_load_project_env_is_safe(self):
+        load_project_env()
+
     def test_registers_all_tools(self):
         mcp = FakeMCP()
         register_all_tools(mcp)
