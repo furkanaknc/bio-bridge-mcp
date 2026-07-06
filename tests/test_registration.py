@@ -1,6 +1,7 @@
 import sys
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 
@@ -33,7 +34,7 @@ class RegistrationTests(unittest.TestCase):
     def test_registers_all_tools(self):
         mcp = FakeMCP()
         register_all_tools(mcp)
-        self.assertEqual(len(mcp.tools), 27)
+        self.assertEqual(len(mcp.tools), 30)
 
     def test_search_pubmed_wrapper_formats_results(self):
         mcp = FakeMCP()
@@ -75,6 +76,30 @@ class RegistrationTests(unittest.TestCase):
 
         self.assertIn("### Analysis for GSM12345", output)
         self.assertIn("Dosage Detected", output)
+
+    def test_convert_structure_file_creates_obj(self):
+        mcp = FakeMCP()
+        register_all_tools(mcp)
+        pdb_text = "\n".join(
+            [
+                "TITLE     HEMOGLOBIN TEST",
+                "ATOM      1  N   GLY A   1      11.104  13.207   9.447  1.00 20.00           N",
+                "ATOM      2  CA  GLY A   1      12.560  13.207   9.447  1.00 20.00           C",
+                "HETATM    3  FE  HEM A 201      13.000  14.000  10.000  1.00 20.00          FE",
+                "END",
+            ]
+        )
+
+        with TemporaryDirectory() as temp_dir:
+            pdb_path = Path(temp_dir) / "sample.pdb"
+            pdb_path.write_text(pdb_text, encoding="utf-8")
+            result = mcp.tools["convert_structure_to_obj"](str(pdb_path))
+
+        self.assertEqual(result["protein"], "HEMOGLOBIN TEST")
+        self.assertTrue(result["artifacts"]["obj"].endswith(".obj"))
+        self.assertEqual(result["chains"], 1)
+        self.assertEqual(result["atoms"], 3)
+        self.assertGreater(result["mesh"]["faces"], 0)
 
 
 if __name__ == "__main__":
