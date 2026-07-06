@@ -12,6 +12,8 @@ Tool groups:
   pdb_get_validation_report, pdb_search_by_uniprot, pdb_download_structure
 - Structure export: convert_structure_to_obj, convert_pdb_id_to_obj, analyze_structure
   for OBJ/STL mesh export and structural summaries
+- PyMOL visualization: render_structure_image_tool, export_structure_session_tool
+  when a PyMOL backend/image is available
 - Protein info: get_uniprot_entry, search_uniprot_proteins, get_protein_go_terms,
   get_protein_pathways
 - Pathways: search_kegg_pathway, get_kegg_pathway_info, get_kegg_pathway_genes
