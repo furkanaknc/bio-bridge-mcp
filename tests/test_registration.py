@@ -34,7 +34,7 @@ class RegistrationTests(unittest.TestCase):
     def test_registers_all_tools(self):
         mcp = FakeMCP()
         register_all_tools(mcp)
-        self.assertEqual(len(mcp.tools), 30)
+        self.assertEqual(len(mcp.tools), 32)
 
     def test_search_pubmed_wrapper_formats_results(self):
         mcp = FakeMCP()
@@ -100,6 +100,28 @@ class RegistrationTests(unittest.TestCase):
         self.assertEqual(result["chains"], 1)
         self.assertEqual(result["atoms"], 3)
         self.assertGreater(result["mesh"]["faces"], 0)
+
+    def test_pymol_backend_error_is_clear(self):
+        mcp = FakeMCP()
+        register_all_tools(mcp)
+        pdb_text = "\n".join(
+            [
+                "TITLE     HEMOGLOBIN TEST",
+                "ATOM      1  N   GLY A   1      11.104  13.207   9.447  1.00 20.00           N",
+                "END",
+            ]
+        )
+
+        with TemporaryDirectory() as temp_dir:
+            pdb_path = Path(temp_dir) / "sample.pdb"
+            pdb_path.write_text(pdb_text, encoding="utf-8")
+            result = mcp.tools["convert_structure_to_obj"](
+                str(pdb_path),
+                backend="pymol",
+                representation="surface",
+            )
+
+        self.assertIn("PyMOL backend is not available", result["error"])
 
 
 if __name__ == "__main__":

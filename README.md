@@ -16,6 +16,12 @@ The project now follows a code-first MCP layout:
 This keeps wrappers small and filesystem-discoverable, and moves control flow and data
 handling into code instead of the model context.
 
+## Runtime Variants
+
+- `lite`: uses the internal structure backend for mesh export
+- `pymol`: adds an optional PyMOL backend for structure rendering, session export,
+  and PyMOL-driven OBJ export
+
 ## Tool Groups
 
 - Literature: `search_pubmed_papers`, `advanced_pubmed_search`, `get_pubmed_abstract`
@@ -29,6 +35,9 @@ handling into code instead of the model context.
 - Pathways: `search_kegg_pathway`, `get_kegg_pathway_info`, `get_kegg_pathway_genes`
 - Predicted structures: `get_alphafold_structure`
 - Clinical variants: `search_clinvar_variants`, `search_clinvar_by_gene`
+- 3D structure export: `convert_structure_to_obj`, `convert_pdb_id_to_obj`,
+  `analyze_structure`
+- PyMOL visuals: `render_structure_image_tool`, `export_structure_session_tool`
 
 ## Important Rule
 
@@ -47,6 +56,13 @@ mcp dev src/server.py
 Production:
 
 ```bash
+python src/server.py
+```
+
+PyMOL-enabled environment:
+
+```bash
+pip install -r requirements-pymol.txt
 python src/server.py
 ```
 
@@ -140,6 +156,41 @@ If you are using a GUI-based MCP configuration panel where the launch command an
 
 ```bash
 python -m unittest discover -s tests -v
+```
+
+## Docker
+
+Lite image:
+
+```bash
+docker build -t bio-bridge:lite .
+```
+
+PyMOL image:
+
+```bash
+docker build -f Dockerfile.pymol -t bio-bridge:pymol .
+```
+
+## Structure Backends
+
+Structure export tools support:
+
+- `backend="internal"` for fast built-in mesh generation
+- `backend="pymol"` for PyMOL-driven structure views when the PyMOL runtime is installed
+
+Example prompts:
+
+```text
+1CRN yapısını spheres temsilinde OBJ olarak dışa aktar.
+```
+
+```text
+1CRN yapısını PyMOL backend ile surface OBJ olarak üret.
+```
+
+```text
+1CRN için PyMOL backend kullanarak PNG render oluştur.
 ```
 
 ## Project Structure
