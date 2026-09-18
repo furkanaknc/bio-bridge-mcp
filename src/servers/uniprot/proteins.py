@@ -1,8 +1,9 @@
 from shared.clients import get_uniprot_client
+from shared.tool_metadata import READ_ONLY_OPEN_WORLD
 
 
 def register_uniprot_tools(mcp):
-    @mcp.tool()
+    @mcp.tool(title="Get UniProt entry", annotations=READ_ONLY_OPEN_WORLD)
     def get_uniprot_entry(uniprot_id: str) -> str:
         """Get detailed protein information from UniProt."""
         uniprot_client = get_uniprot_client()
@@ -36,7 +37,7 @@ def register_uniprot_tools(mcp):
         except Exception as exc:
             return f"Error getting UniProt entry: {exc}"
 
-    @mcp.tool()
+    @mcp.tool(title="Search UniProt proteins", annotations=READ_ONLY_OPEN_WORLD)
     def search_uniprot_proteins(query: str, organism: str = "human") -> str:
         """Search for proteins in UniProt."""
         uniprot_client = get_uniprot_client()
@@ -62,7 +63,7 @@ def register_uniprot_tools(mcp):
         except Exception as exc:
             return f"Error searching proteins: {exc}"
 
-    @mcp.tool()
+    @mcp.tool(title="Get protein GO terms", annotations=READ_ONLY_OPEN_WORLD)
     def get_protein_go_terms(uniprot_id: str) -> str:
         """Get Gene Ontology terms for a protein."""
         uniprot_client = get_uniprot_client()
@@ -98,7 +99,7 @@ def register_uniprot_tools(mcp):
         except Exception as exc:
             return f"Error getting GO terms: {exc}"
 
-    @mcp.tool()
+    @mcp.tool(title="Get protein pathways", annotations=READ_ONLY_OPEN_WORLD)
     def get_protein_pathways(uniprot_id: str) -> str:
         """Get metabolic and signaling pathways for a protein."""
         uniprot_client = get_uniprot_client()

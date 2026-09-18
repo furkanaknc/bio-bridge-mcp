@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools==80.9.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bio-bridge-mcp"
+version = "0.2.0"
+description = "A bioinformatics MCP server for NCBI, RCSB PDB, UniProt, KEGG, AlphaFold, and ClinVar."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "mcp==2.2.0",
+  "biopython==1.88",
+  "requests==2.34.2",
+  "python-dotenv==1.2.3",
+  "httpx==0.28.1",
+]
+
+[project.scripts]
+bio-bridge = "server:main"
+
+[project.urls]
+Homepage = "https://github.com/furkanaknc/bio-bridge-mcp"
+Repository = "https://github.com/furkanaknc/bio-bridge-mcp"
+Issues = "https://github.com/furkanaknc/bio-bridge-mcp/issues"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+py-modules = ["server", "prompts"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

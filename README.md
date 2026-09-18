@@ -1,7 +1,8 @@
 # Bio-Bridge
 
 Bio-Bridge is a bioinformatics MCP server that exposes 27 tools over NCBI, RCSB PDB,
-UniProt, KEGG, AlphaFold, and ClinVar.
+UniProt, KEGG, AlphaFold, and ClinVar. It uses MCP Python SDK v2 and publishes tool
+titles, behavioral annotations, input schemas, and output schemas to MCP clients.
 
 ## Architecture
 
@@ -37,6 +38,9 @@ structures and do not provide ligand context.
 
 ## Run
 
+Requires Python 3.10 or newer. Direct runtime dependencies are exactly pinned for
+reproducible server and container builds.
+
 ### Local Execution
 
 ```bash
@@ -50,6 +54,13 @@ Production:
 python src/server.py
 ```
 
+The package also installs a `bio-bridge` command:
+
+```bash
+pip install .
+bio-bridge
+```
+
 ### Running with Docker
 
 This MCP server is published on Docker Hub. You can run it directly without cloning/building the repository:
@@ -57,6 +68,10 @@ This MCP server is published on Docker Hub. You can run it directly without clon
 ```bash
 docker run -i --rm akncdocker/bio-bridge
 ```
+
+Docker is currently the simplest no-clone installation path. GitHub releases can also
+attach the wheel and source archive produced by `python -m build`; users can download a
+versioned artifact instead of cloning the repository.
 
 If you prefer to build the image locally:
 ```bash
@@ -141,6 +156,15 @@ If you are using a GUI-based MCP configuration panel where the launch command an
 ```bash
 python -m unittest discover -s tests -v
 ```
+
+## Prompt Templates
+
+Bio-Bridge exposes three reusable MCP prompts:
+
+- `investigate_protein_structure`: UniProt to PDB/AlphaFold comparison, including
+  validation, ligands, and binding pockets
+- `review_gene_disease_evidence`: gene, ClinVar, PubMed, and KEGG evidence review
+- `triage_geo_experiments`: GEO search, study inspection, and sample-group triage
 
 ## Project Structure
 

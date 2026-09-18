@@ -1,8 +1,9 @@
 from shared.clients import get_alphafold_client
+from shared.tool_metadata import READ_ONLY_OPEN_WORLD
 
 
 def register_alphafold_tools(mcp):
-    @mcp.tool()
+    @mcp.tool(title="Get AlphaFold structure", annotations=READ_ONLY_OPEN_WORLD)
     def get_alphafold_structure(uniprot_id: str) -> str:
         """Get the predicted 3D structure of a protein from AlphaFold."""
         alphafold_client = get_alphafold_client()

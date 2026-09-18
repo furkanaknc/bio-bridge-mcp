@@ -1,8 +1,9 @@
 from shared.clients import get_kegg_client
+from shared.tool_metadata import READ_ONLY_OPEN_WORLD
 
 
 def register_kegg_tools(mcp):
-    @mcp.tool()
+    @mcp.tool(title="Search KEGG pathways", annotations=READ_ONLY_OPEN_WORLD)
     def search_kegg_pathway(query: str, organism: str = "hsa") -> str:
         """Search for KEGG pathways by keyword."""
         kegg_client = get_kegg_client()
@@ -28,7 +29,7 @@ def register_kegg_tools(mcp):
         except Exception as exc:
             return f"Error searching pathways: {exc}"
 
-    @mcp.tool()
+    @mcp.tool(title="Get KEGG pathway details", annotations=READ_ONLY_OPEN_WORLD)
     def get_kegg_pathway_info(pathway_id: str) -> str:
         """Get details of a specific KEGG pathway."""
         kegg_client = get_kegg_client()
@@ -59,7 +60,7 @@ def register_kegg_tools(mcp):
         except Exception as exc:
             return f"Error getting pathway info: {exc}"
 
-    @mcp.tool()
+    @mcp.tool(title="Get KEGG pathway genes", annotations=READ_ONLY_OPEN_WORLD)
     def get_kegg_pathway_genes(pathway_id: str) -> str:
         """Get the list of genes in a KEGG pathway."""
         kegg_client = get_kegg_client()
