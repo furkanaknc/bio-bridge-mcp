@@ -1,8 +1,9 @@
 from shared.clients import get_rcsb_client
+from shared.tool_metadata import READ_ONLY_OPEN_WORLD
 
 
 def register_rcsb_tools(mcp):
-    @mcp.tool()
+    @mcp.tool(title="Get PDB structure summary", annotations=READ_ONLY_OPEN_WORLD)
     def pdb_get_summary(pdb_id: str) -> str:
         """Get details about a PDB structure, including classification and mutations."""
         rcsb_client = get_rcsb_client()
@@ -34,7 +35,7 @@ def register_rcsb_tools(mcp):
         except Exception as exc:
             return f"Error analyzing PDB summary: {exc}"
 
-    @mcp.tool()
+    @mcp.tool(title="List PDB ligands", annotations=READ_ONLY_OPEN_WORLD)
     def pdb_get_ligands(pdb_id: str) -> str:
         """List small molecule ligands bound to a PDB structure."""
         rcsb_client = get_rcsb_client()
@@ -58,8 +59,8 @@ def register_rcsb_tools(mcp):
         except Exception as exc:
             return f"Error fetching ligands: {exc}"
 
-    @mcp.tool()
-    def pdb_find_pockets(pdb_id: str, ligand_id: str = None) -> str:
+    @mcp.tool(title="Find PDB binding pockets", annotations=READ_ONLY_OPEN_WORLD)
+    def pdb_find_pockets(pdb_id: str, ligand_id: str | None = None) -> str:
         """Identify binding pockets in a PDB structure."""
         rcsb_client = get_rcsb_client()
         if not rcsb_client:
@@ -88,8 +89,12 @@ def register_rcsb_tools(mcp):
         except Exception as exc:
             return f"Error calculating binding pocket: {exc}"
 
-    @mcp.tool()
-    def pdb_search(query: str, resolution: str = None, method: str = None) -> str:
+    @mcp.tool(title="Search PDB structures", annotations=READ_ONLY_OPEN_WORLD)
+    def pdb_search(
+        query: str,
+        resolution: str | None = None,
+        method: str | None = None,
+    ) -> str:
         """Search for PDB structures using advanced filters."""
         rcsb_client = get_rcsb_client()
         if not rcsb_client:
@@ -130,7 +135,7 @@ def register_rcsb_tools(mcp):
         except Exception as exc:
             return f"Error executing search: {exc}"
 
-    @mcp.tool()
+    @mcp.tool(title="Get PDB validation report", annotations=READ_ONLY_OPEN_WORLD)
     def pdb_get_validation_report(pdb_id: str) -> str:
         """Get the quality validation report for a PDB structure."""
         rcsb_client = get_rcsb_client()
@@ -153,7 +158,7 @@ def register_rcsb_tools(mcp):
         except Exception as exc:
             return f"Error fetching validation report: {exc}"
 
-    @mcp.tool()
+    @mcp.tool(title="Find PDB structures by UniProt", annotations=READ_ONLY_OPEN_WORLD)
     def pdb_search_by_uniprot(uniprot_id: str) -> str:
         """Find PDB structures corresponding to a UniProt entry."""
         rcsb_client = get_rcsb_client()
@@ -174,7 +179,7 @@ def register_rcsb_tools(mcp):
         except Exception as exc:
             return f"Error executing UniProt search: {exc}"
 
-    @mcp.tool()
+    @mcp.tool(title="Download PDB structure", annotations=READ_ONLY_OPEN_WORLD)
     def pdb_download_structure(pdb_id: str, file_format: str = "pdb") -> str:
         """Download the raw content for a PDB structure file."""
         rcsb_client = get_rcsb_client()

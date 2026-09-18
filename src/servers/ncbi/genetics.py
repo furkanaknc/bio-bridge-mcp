@@ -1,8 +1,9 @@
 from shared.clients import get_ncbi_client
+from shared.tool_metadata import READ_ONLY_OPEN_WORLD
 
 
 def register_genetics_tools(mcp):
-    @mcp.tool()
+    @mcp.tool(title="Run NCBI BLAST", annotations=READ_ONLY_OPEN_WORLD)
     def blast_sequence(
         sequence: str,
         database: str = "nt",
@@ -34,7 +35,7 @@ def register_genetics_tools(mcp):
         except Exception as exc:
             return f"Error running BLAST: {exc}"
 
-    @mcp.tool()
+    @mcp.tool(title="Fetch NCBI sequence", annotations=READ_ONLY_OPEN_WORLD)
     def fetch_sequence(accession: str, seq_type: str = "nucleotide") -> str:
         """Fetch a DNA, RNA, or protein sequence from NCBI."""
         ncbi_client = get_ncbi_client()
@@ -71,7 +72,7 @@ def register_genetics_tools(mcp):
         except Exception as exc:
             return f"Error fetching sequence: {exc}"
 
-    @mcp.tool()
+    @mcp.tool(title="Get NCBI gene details", annotations=READ_ONLY_OPEN_WORLD)
     def get_gene_info(gene_symbol: str, organism: str = "human") -> str:
         """Get detailed information about a specific gene."""
         ncbi_client = get_ncbi_client()
@@ -101,7 +102,7 @@ def register_genetics_tools(mcp):
         except Exception as exc:
             return f"Error getting gene info: {exc}"
 
-    @mcp.tool()
+    @mcp.tool(title="Search NCBI genes", annotations=READ_ONLY_OPEN_WORLD)
     def search_genes(query: str, organism: str = "human") -> str:
         """Search for genes by keyword."""
         ncbi_client = get_ncbi_client()

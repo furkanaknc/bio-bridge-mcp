@@ -1,8 +1,9 @@
 from shared.clients import get_ncbi_client
+from shared.tool_metadata import READ_ONLY_OPEN_WORLD
 
 
 def register_gene_expression_tools(mcp):
-    @mcp.tool()
+    @mcp.tool(title="Search GEO datasets", annotations=READ_ONLY_OPEN_WORLD)
     def search_geo_datasets(query: str) -> str:
         """Search for gene expression datasets in NCBI GEO."""
         ncbi_client = get_ncbi_client()
@@ -24,7 +25,7 @@ def register_gene_expression_tools(mcp):
             )
         return "\n".join(output)
 
-    @mcp.tool()
+    @mcp.tool(title="Analyze GEO series", annotations=READ_ONLY_OPEN_WORLD)
     def analyze_geo_series(gse_id: str) -> str:
         """Get experiment details for a GEO series accession."""
         ncbi_client = get_ncbi_client()
@@ -58,7 +59,7 @@ def register_gene_expression_tools(mcp):
         except Exception as exc:
             return f"Error analyzing series: {exc}"
 
-    @mcp.tool()
+    @mcp.tool(title="Classify GEO samples", annotations=READ_ONLY_OPEN_WORLD)
     def classify_geo_samples(gse_id: str) -> str:
         """Classify samples in a GEO series into control and treated groups."""
         ncbi_client = get_ncbi_client()

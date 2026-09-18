@@ -1,8 +1,9 @@
 from shared.clients import get_clinvar_client
+from shared.tool_metadata import READ_ONLY_OPEN_WORLD
 
 
 def register_clinvar_tools(mcp):
-    @mcp.tool()
+    @mcp.tool(title="Search ClinVar variants", annotations=READ_ONLY_OPEN_WORLD)
     def search_clinvar_variants(query: str) -> str:
         """Search ClinVar for genetic variants."""
         clinvar_client = get_clinvar_client()
@@ -29,8 +30,11 @@ def register_clinvar_tools(mcp):
         except Exception as exc:
             return f"Error searching variants: {exc}"
 
-    @mcp.tool()
-    def search_clinvar_by_gene(gene_symbol: str, significance: str = None) -> str:
+    @mcp.tool(title="Search ClinVar by gene", annotations=READ_ONLY_OPEN_WORLD)
+    def search_clinvar_by_gene(
+        gene_symbol: str,
+        significance: str | None = None,
+    ) -> str:
         """Search ClinVar variants by gene symbol."""
         clinvar_client = get_clinvar_client()
         if not clinvar_client:

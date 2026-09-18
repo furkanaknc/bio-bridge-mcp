@@ -1,8 +1,9 @@
 from shared.clients import get_ncbi_client
+from shared.tool_metadata import READ_ONLY_OPEN_WORLD
 
 
 def register_literature_tools(mcp):
-    @mcp.tool()
+    @mcp.tool(title="Search PubMed papers", annotations=READ_ONLY_OPEN_WORLD)
     def search_pubmed_papers(query: str) -> str:
         """Search PubMed for scientific papers and articles."""
         ncbi_client = get_ncbi_client()
@@ -28,12 +29,12 @@ def register_literature_tools(mcp):
             output.append(f"  *Journal: {item['journal']} ({item['pub_date']})*")
         return "\n".join(output)
 
-    @mcp.tool()
+    @mcp.tool(title="Advanced PubMed search", annotations=READ_ONLY_OPEN_WORLD)
     def advanced_pubmed_search(
-        gene: str = None,
-        disease: str = None,
-        drug: str = None,
-        year_from: int = None,
+        gene: str | None = None,
+        disease: str | None = None,
+        drug: str | None = None,
+        year_from: int | None = None,
     ) -> str:
         """Perform a structured search in PubMed using specific filters."""
         ncbi_client = get_ncbi_client()
@@ -83,7 +84,7 @@ def register_literature_tools(mcp):
         except Exception as exc:
             return f"Error in advanced search: {exc}"
 
-    @mcp.tool()
+    @mcp.tool(title="Get PubMed abstract", annotations=READ_ONLY_OPEN_WORLD)
     def get_pubmed_abstract(pmid: str) -> str:
         """Get the abstract and details of a specific PubMed article."""
         ncbi_client = get_ncbi_client()
